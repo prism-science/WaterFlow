@@ -25,11 +25,8 @@ from torch.utils.data import Dataset
 from torch_geometric.data import HeteroData
 
 from src.confidence import nearest_gt_distance, smootherstep_confidence
-from src.constants import ELEM_IDX, NODE_FEATURE_DIM
+from src.constants import NODE_FEATURE_DIM, OXYGEN_INDEX
 from src.dataset import ProteinWaterDataset
-
-
-OXYGEN_INDEX = ELEM_IDX["O"]
 
 
 def _oxygen_features(n: int, device: torch.device | None = None) -> Tensor:

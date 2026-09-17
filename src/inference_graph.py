@@ -24,7 +24,7 @@ from loguru import logger
 from torch_cluster import radius_graph
 from torch_geometric.data import HeteroData
 
-from src.constants import EDGE_PP, NODE_FEATURE_DIM, NUM_RBF
+from src.constants import DEFAULT_EDGE_CUTOFF, EDGE_PP, NODE_FEATURE_DIM, NUM_RBF
 from src.dataset import (
     _make_undirected,
     _parse_pdb_resi,
@@ -50,7 +50,7 @@ def build_inference_graph(
     processed_dir: str | Path | None = None,
     include_mates: bool = False,
     include_ligands: bool = True,
-    cutoff: float = 8.0,
+    cutoff: float = DEFAULT_EDGE_CUTOFF,
     max_neighbors: int = 256,
     cache_key: str | None = None,
     cache_load_mmap: bool = True,

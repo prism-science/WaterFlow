@@ -243,8 +243,8 @@ def compute_edge_features(
     pos: Tensor,
     edge_index: Tensor,
     pos_dst: Tensor | None = None,
-    num_gaussians: int = 16,
-    cutoff: float = 8.0,
+    num_gaussians: int = NUM_RBF,
+    cutoff: float = RBF_CUTOFF,
     clamp_min: float = 1e-5,
 ) -> tuple[Tensor, Tensor]:
     """

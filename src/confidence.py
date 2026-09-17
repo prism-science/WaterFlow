@@ -22,7 +22,13 @@ import torch.nn.functional as F
 from torch import nn, Tensor
 from torch_geometric.data import HeteroData
 
-from src.constants import EDGE_PP, EDGE_PW, NUM_RBF
+from src.constants import (
+    DEFAULT_EDGE_CUTOFF,
+    EDGE_PP,
+    EDGE_PW,
+    NUM_RBF,
+    OXYGEN_VDW_RADIUS,
+)
 from src.encoder_base import BaseProteinEncoder, build_encoder, resolve_encoder_config
 from src.flow import ProteinWaterUpdate
 from src.gvp import GVP
@@ -136,9 +142,6 @@ def smootherstep_target(
 # ---------------------------------------------------------------------------
 # Post-processor
 # ---------------------------------------------------------------------------
-
-
-OXYGEN_VDW_RADIUS = 1.52  # Angstroms. Clustering and NMS radius for waters.
 
 
 def cluster_waters_vdw(
@@ -279,7 +282,7 @@ class ConfidenceGVP(nn.Module):
         n_message_gvps: int = 2,
         n_update_gvps: int = 2,
         vector_gate: bool = True,
-        cutoff: float = 8.0,
+        cutoff: float = DEFAULT_EDGE_CUTOFF,
         max_neighbors: int = 256,
         dynamic_edge_policy: str = "knn_if_isolated",
         knn_fallback_k: int = 8,
@@ -459,7 +462,7 @@ def build_confidence_model(config: dict, device: torch.device) -> ConfidenceGVP:
         drop_rate=config.get("drop_rate", 0.1),
         n_message_gvps=config.get("n_message_gvps", 2),
         n_update_gvps=config.get("n_update_gvps", 2),
-        cutoff=config.get("cutoff", 8.0),
+        cutoff=config.get("cutoff", DEFAULT_EDGE_CUTOFF),
         max_neighbors=config.get("max_neighbors", 256),
         knn_fallback_k=config.get("knn_fallback_k", 8),
         # Fixed, not from flow config: candidates are scored with no cached PW

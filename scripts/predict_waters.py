@@ -49,6 +49,7 @@ from tqdm import tqdm
 from scripts.inference import build_model_from_config, run_inference_batch
 from src.confidence import build_confidence_model, cluster_waters_vdw, ConfidenceGVP
 from src.confidence_dataset import _oxygen_features
+from src.constants import DEFAULT_EDGE_CUTOFF
 from src.dataset import crystal_symmetry_check, parse_asu_with_biotite
 from src.flow import FlowMatcher
 from src.inference_graph import build_inference_graph
@@ -199,7 +200,7 @@ def predict_structures(
                 processed_dir=args.processed_dir,
                 include_mates=args.include_mates,
                 include_ligands=flow_config.get("include_ligands", True),
-                cutoff=flow_config.get("cutoff", 8.0),
+                cutoff=flow_config.get("cutoff", DEFAULT_EDGE_CUTOFF),
                 max_neighbors=flow_config.get("max_neighbors", 256),
                 cache_dir=cache,
             )

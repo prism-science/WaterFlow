@@ -19,6 +19,15 @@ RBF_CUTOFF = 8.0  # Distance cutoff in Angstroms for RBF encoding
 # building edges beyond it would feed the message passing near-zero features.
 DEFAULT_EDGE_CUTOFF = RBF_CUTOFF
 
+# van der Waals radius of oxygen, in Angstroms. Sets the clustering and
+# non-maximum-suppression radius when merging predicted water candidates.
+OXYGEN_VDW_RADIUS = 1.52
+
+# Default minimum EDIAm score for a ground-truth water to be kept during
+# training-data quality filtering. Waters scoring below this are dropped as
+# unreliably placed. Shared default for the dataset filters and the CLIs.
+DEFAULT_MIN_EDIA = 0.4
+
 # Edge type tuples: (src_node_type, edge_name, dst_node_type)
 EDGE_PP = ("protein", "pp", "protein")  # protein -> protein
 EDGE_WW = ("water", "ww", "water")  # water -> water
@@ -136,3 +145,6 @@ ELEMENT_VOCAB = [
     "BR",
 ]
 ELEM_IDX = {e: i for i, e in enumerate(ELEMENT_VOCAB)}
+
+# Index of oxygen in ELEMENT_VOCAB, used to build water (oxygen) node features.
+OXYGEN_INDEX = ELEM_IDX["O"]

@@ -29,7 +29,7 @@ import torch.nn as nn
 from loguru import logger
 from tqdm import tqdm
 
-from src.constants import DEFAULT_EDGE_CUTOFF, NUM_RBF
+from src.constants import DEFAULT_EDGE_CUTOFF, DEFAULT_MIN_EDIA, NUM_RBF
 from src.dataset import ProteinWaterDataset
 from src.encoder_base import build_encoder, resolve_encoder_config
 from src.flow import FlowMatcher, FlowWaterGVP
@@ -211,7 +211,7 @@ def _extract_dataset_filter_config(config: dict) -> dict:
         "interface_dist_threshold": config.get("interface_dist_threshold", 4.0),
         "min_water_residue_ratio": config.get("min_water_residue_ratio", 0.1),
         "max_protein_dist": config.get("max_protein_dist", 5.0),
-        "min_edia": config.get("min_edia", 0.4),
+        "min_edia": config.get("min_edia", DEFAULT_MIN_EDIA),
         "max_bfactor_zscore": config.get("max_bfactor_zscore", 2.0),
         "filter_by_distance": config.get("filter_by_distance", True),
         "filter_by_edia": config.get("filter_by_edia", True),

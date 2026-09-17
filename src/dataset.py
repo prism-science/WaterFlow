@@ -36,6 +36,8 @@ from torch_geometric.data import Batch, HeteroData
 from tqdm import tqdm
 
 from src.constants import (
+    DEFAULT_EDGE_CUTOFF,
+    DEFAULT_MIN_EDIA,
     EDGE_PP,
     ELEM_IDX,
     ELEMENT_VOCAB,
@@ -832,7 +834,7 @@ def filter_waters_by_quality(
     edia_lookup: dict[tuple, float] | None,
     bfactor_lookup: dict[tuple, float] | None,
     max_protein_dist: float = 6.0,
-    min_edia: float = 0.4,
+    min_edia: float = DEFAULT_MIN_EDIA,
     max_bfactor_zscore: float = 1.5,
     cache_key: str | None = None,
 ) -> np.ndarray:
@@ -927,7 +929,7 @@ class ProteinWaterDataset(Dataset):
         processed_dir: str,
         base_pdb_dir: str,
         encoder_type: str = "gvp",
-        cutoff: float = 8.0,
+        cutoff: float = DEFAULT_EDGE_CUTOFF,
         max_neighbors: int = 256,
         include_mates: bool = True,
         include_ligands: bool = True,
@@ -940,7 +942,7 @@ class ProteinWaterDataset(Dataset):
         interface_dist_threshold: float = 4.0,
         min_water_residue_ratio: float = 0.1,
         max_protein_dist: float = 5.0,
-        min_edia: float = 0.4,
+        min_edia: float = DEFAULT_MIN_EDIA,
         max_bfactor_zscore: float = 2.0,
         filter_by_distance: bool = True,
         filter_by_edia: bool = True,

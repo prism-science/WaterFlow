@@ -42,6 +42,7 @@ from torch.utils.data import DataLoader
 from torch_geometric.data import HeteroData
 from tqdm import tqdm
 
+from src.constants import DEFAULT_EDGE_CUTOFF, DEFAULT_MIN_EDIA
 from src.dataset import get_dataloader, ProteinWaterDataset
 from src.distributed import (
     all_reduce_means,
@@ -185,7 +186,7 @@ def parse_args():
     p.add_argument(
         "--min_edia",
         type=float,
-        default=0.4,
+        default=DEFAULT_MIN_EDIA,
         help="Water filter: remove waters with EDIA below this threshold.",
     )
     p.add_argument(
@@ -280,8 +281,8 @@ def parse_args():
     p.add_argument(
         "--cutoff",
         type=float,
-        default=8.0,
-        help="Distance cutoff in Angstroms for radius edges (default: 8.0)",
+        default=DEFAULT_EDGE_CUTOFF,
+        help=f"Distance cutoff in Angstroms for radius edges (default: {DEFAULT_EDGE_CUTOFF})",
     )
     p.add_argument(
         "--max_neighbors",
