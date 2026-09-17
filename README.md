@@ -9,7 +9,7 @@ WaterFlow is a two-stage Deep Learning model that predicts the positions of orde
 - **[Predicting waters](#predicting-waters)**: run the shipped models on your structures.
 - **[Training your own models](#training-your-own-models)**: reproduce both models from your own training sets or our splits.
 
-- If you use WaterFlow, please cite [Srivastava V, Mai H, Collins M, Holton JM, Wall ME, Wankowicz SA. "WaterFlow: Prediction of Ordered Water Molecule Positions on Protein Structures. doi: 10.64898/2026.08.26.747373](https://www.biorxiv.org/content/10.64898/2026.08.26.747373v1)
+- If you use WaterFlow, please cite [Srivastava V, Mai H, Collins M, Holton JM, Wall ME, Wankowicz SA. WaterFlow: Prediction of Ordered Water Molecule Positions on Protein Structures. doi: 10.64898/2026.08.26.747373](https://www.biorxiv.org/content/10.64898/2026.08.26.747373v1)
 
 ## Table of Contents
 
