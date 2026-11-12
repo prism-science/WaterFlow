@@ -38,6 +38,7 @@ Output format (per cache file):
 import argparse
 import io
 from collections import Counter
+from contextlib import contextmanager
 from pathlib import Path
 
 import numpy as np
@@ -57,6 +58,43 @@ from src.utils import (
     sanitize_res_names_for_esm,
     setup_logging_for_tqdm,
 )
+
+
+@contextmanager
+def default_dtype(dtype: torch.dtype):
+    """Temporarily change the dtype that new tensors are created with."""
+    previous = torch.get_default_dtype()
+    torch.set_default_dtype(dtype)
+    try:
+        yield
+    finally:
+        torch.set_default_dtype(previous)
+
+
+def load_esm3_model(model_name: str, device: torch.device) -> ESM3:
+    """Load ESM3 without the float32 spike ``from_pretrained`` incurs.
+
+    ``ESM3.from_pretrained`` builds the model in float32 directly on the
+    target device (``with torch.device(device): ESM3(...)``, in
+    ``esm/pretrained.py``), loads the bfloat16 checkpoint onto that same
+    device, and only afterwards casts the model to bfloat16. The float32
+    model and the checkpoint are briefly resident together, so the load
+    transiently needs ~7.9 GiB of VRAM for a model that occupies ~2.6 GiB
+    once settled. That exceeds what a nominally 8 GB card provides, and the
+    load fails before any structure has been read.
+
+    On CUDA, constructing in bfloat16 -- the dtype the model is cast to
+    anyway -- lowers the peak to ~5.3 GiB at no cost in host memory. The
+    resulting weights and embeddings are bitwise identical.
+
+    On CPU the model stays float32, matching what ``from_pretrained`` does
+    there today. Passing the device explicitly also stops a CPU run from
+    allocating on the GPU merely because one is visible.
+    """
+    if device.type == "cpu":
+        return ESM3.from_pretrained(model_name, device=device)
+    with default_dtype(torch.bfloat16):
+        return ESM3.from_pretrained(model_name, device=device)
 
 
 def compute_esm_embeddings(
@@ -267,7 +305,7 @@ def main() -> None:
     logger.info(f"Using device: {device}")
 
     logger.info(f"Loading ESM3 model: {args.model_name}...")
-    model = ESM3.from_pretrained(args.model_name).to(device)
+    model = load_esm3_model(args.model_name, device)
     model.eval()
     logger.info("Model loaded.")
 
