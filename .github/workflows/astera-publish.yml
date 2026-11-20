@@ -1,27 +1,37 @@
 name: Publish WaterFlow ACTL image
 
-# Builds the ACTL overlay (Dockerfile.astera) on a GitHub-hosted runner,
-# smoke-tests it, and pushes diffuse/waterflow:sha-<commit> to Astera's Harbor,
-# the image the actl `waterflow` catalog entry pins by digest.
+# Builds the WaterFlow base image (Dockerfile) and the ACTL overlay on top of
+# it (Dockerfile.astera) from source on a GitHub-hosted runner, smoke-tests the
+# overlay, and pushes diffuse/waterflow to Astera's Harbor, the image the actl
+# `waterflow` catalog entry pins by digest. Nothing is pulled from or pushed to
+# a private third-party registry: the base starts from the public nvidia/cuda
+# image, and the overlay is built on the base image this job just built.
 #
 # Harbor is reachable only over Astera's tailnet: the job joins it as an
 # ephemeral tag:ci-n device through the `harbor-publish` environment's
 # Tailscale trust credential (TS_CI_CLIENT_ID, TS_CI_AUDIENCE), which can reach
 # Harbor and nothing else, and pushes with the environment's Harbor robot
-# (HARBOR_USERNAME, HARBOR_PASSWORD). The base image is private on Docker Hub,
-# so the environment also holds DOCKERHUB_USERNAME and DOCKERHUB_TOKEN.
+# (HARBOR_USERNAME, HARBOR_PASSWORD). The base bakes the gated ESM3 weights, so
+# the environment also holds HF_TOKEN, passed to the build as a BuildKit secret
+# (never a build arg, so it stays out of the image and its history).
 #
 # The registry host is the environment secret ASTERA_REGISTRY, not a literal:
 # this repository and its Actions logs are public, and only secrets are masked.
 #
 # No pull_request trigger: astera-docker.yml validates the overlay on PRs, and
 # the environment is deployable from main only. Tags in the `diffuse` project
-# are immutable, so each commit is pushed once, under sha-<commit>.
+# are immutable: a push build tags sha-<commit>; a manual dispatch or a re-run
+# adds -r<run>.<attempt>, so rebuilding a commit never collides with its tag.
+#
+# Source-only changes (src/, scripts/) do not trigger a rebuild: in ACTL the
+# workspace checkout shadows the source baked into the base. Dispatch the
+# workflow by hand to refresh the baked copy.
 
 on:
   push:
     branches: [main]
     paths:
+      - Dockerfile
       - Dockerfile.astera
       - docker/actl-*
       - docker/entrypoint.sh
@@ -41,7 +51,7 @@ jobs:
   publish:
     runs-on: ubuntu-latest
     environment: harbor-publish
-    timeout-minutes: 90
+    timeout-minutes: 150
     env:
       ASTERA_REGISTRY: ${{ secrets.ASTERA_REGISTRY }}
       IMAGE_NAME: diffuse/waterflow
@@ -73,16 +83,28 @@ jobs:
           docker system prune -af || true
           df -h /
 
-      - name: Log in to Docker Hub (private base)
-        uses: docker/login-action@v3
-        with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
+      - name: Build base
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+        run: |
+          if [ -z "${HF_TOKEN}" ]; then
+            echo "::error::HF_TOKEN environment secret must be set (the base bakes the gated ESM3 weights)."
+            exit 1
+          fi
+          DOCKER_BUILDKIT=1 docker build \
+            --file Dockerfile \
+            --secret id=hf_token,env=HF_TOKEN \
+            --label "org.opencontainers.image.revision=${GITHUB_SHA}" \
+            --label "org.opencontainers.image.source=${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}" \
+            --tag waterflow-base:ci \
+            .
+          df -h /
 
       - name: Build overlay
         run: |
-          docker build \
+          DOCKER_BUILDKIT=1 docker build \
             --file Dockerfile.astera \
+            --build-arg WATERFLOW_BASE_IMAGE=waterflow-base:ci \
             --label "org.opencontainers.image.revision=${GITHUB_SHA}" \
             --label "org.opencontainers.image.source=${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}" \
             --tag waterflow-actl:ci \
@@ -126,9 +148,15 @@ jobs:
           password: ${{ secrets.HARBOR_PASSWORD }}
 
       - name: Push
+        env:
+          RUN_NUMBER: ${{ github.run_number }}
+          RUN_ATTEMPT: ${{ github.run_attempt }}
         run: |
           set -euo pipefail
           tag="${IMAGE_NAME}:sha-${GITHUB_SHA}"
+          if [ "${GITHUB_EVENT_NAME}" != "push" ] || [ "${RUN_ATTEMPT}" != "1" ]; then
+            tag="${tag}-r${RUN_NUMBER}.${RUN_ATTEMPT}"
+          fi
           ref="${ASTERA_REGISTRY}/${tag}"
           docker tag waterflow-actl:ci "$ref"
           docker push "$ref"
