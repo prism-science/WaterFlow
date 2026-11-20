@@ -51,6 +51,10 @@ jobs:
   publish:
     runs-on: ubuntu-latest
     environment: harbor-publish
+    # id-token: the Tailscale action exchanges a GitHub OIDC token for its trust credential.
+    permissions:
+      contents: read
+      id-token: write
     timeout-minutes: 150
     env:
       ASTERA_REGISTRY: ${{ secrets.ASTERA_REGISTRY }}
